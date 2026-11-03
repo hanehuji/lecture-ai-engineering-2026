@@ -6,10 +6,12 @@
 
 import json
 import random
+from datetime import datetime
 from functools import cache
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+LEARNING_LOG_PATH = Path(__file__).resolve().parent.parent / "learning_log" / "records.jsonl"
 MAX_RESULTS = 3
 
 
@@ -96,3 +98,27 @@ def make_quiz(lecture: int) -> str:
         },
         ensure_ascii=False,
     )
+
+
+def save_learning_log(topic: str, learned: str, next_step: str = "") -> str:
+    """学んだ内容を記録する。保存の承認確認は CLI が行う。
+
+    学習内容を記録に残したいと頼まれたら呼び出す。呼び出し前に会話で承認を尋ねない。
+    topic にテーマ、learned に学んだこと、next_step に次に調べたいことを入れる。
+    CLI が承認を得るまでファイルには書き込まれない。保存先は learning_log/records.jsonl。
+    """
+    topic = topic.strip()
+    learned = learned.strip()
+    if not topic or not learned:
+        return "保存できません。テーマと学んだことの両方を入力してください。"
+
+    record = {
+        "saved_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "topic": topic,
+        "learned": learned,
+        "next_step": next_step.strip(),
+    }
+    LEARNING_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with LEARNING_LOG_PATH.open("a", encoding="utf-8") as file:
+        file.write(json.dumps(record, ensure_ascii=False) + "\n")
+    return "学習記録を learning_log/records.jsonl に保存しました。"
